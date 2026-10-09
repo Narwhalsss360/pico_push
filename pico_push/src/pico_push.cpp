@@ -2,7 +2,7 @@
 
 using namespace pico_push;
 
-Push::Push(const pin_t& pin, const bool& pull_up_button, const absolute_time_t& debounce)
+Push::Push(const pin_t& pin, const bool& pull_up_button, const uint32_t& debounce)
     :
         pin(pin),
         pull_up_button(pull_up_button),
@@ -62,7 +62,7 @@ uint64_t Push::held_for() const {
 }
 
 PushState Push::update() {
-    if (absolute_time_diff_us(last_read, get_absolute_time()) >= static_cast<int64_t>(debounce)) {
+    if (absolute_time_diff_us(last_read, get_absolute_time()) < static_cast<int64_t>(debounce) * 1000) {
         if (last_state == PushState::pushed) {
             last_state = PushState::depressed;
         } else if (last_state == PushState::released) {

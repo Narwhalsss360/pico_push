@@ -19,10 +19,14 @@ namespace pico_push {
 
     constexpr bool PUSH_PULL_DOWN = false;
 
+    constexpr bool DEFAULT_PULL = PUSH_PULL_DOWN;
+
+    constexpr uint64_t DEFAULT_DEBOUNCE = 10;
+
     class Push {
 
     public:
-        Push(const pin_t& pin, const bool& pull_up_button = PUSH_PULL_DOWN, const absolute_time_t& debounce = 10e3);
+        Push(const pin_t& pin, const bool& pull_up_button = DEFAULT_PULL, const uint32_t& debounce = DEFAULT_DEBOUNCE);
 
         void initialize();
 
@@ -38,13 +42,13 @@ namespace pico_push {
 
         PushState update();
 
-    private:
         const pin_t pin;
 
         const bool pull_up_button;
 
-        const absolute_time_t& debounce;
+        const uint32_t debounce;
 
+    private:
         PushState last_state;
 
         absolute_time_t last_read;
