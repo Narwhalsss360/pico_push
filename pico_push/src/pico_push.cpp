@@ -7,9 +7,9 @@ Push::Push(const pin_t& pin, const bool& pull_up_button, const absolute_time_t& 
         pin(pin),
         pull_up_button(pull_up_button),
         debounce(debounce),
-        last_read(0),
-        pushed_at(0),
-        released_at(0) {}
+        last_read(nil_time),
+        _pushed_at(nil_time),
+        _released_at(nil_time) {}
 
 void Push::initialize() {
     gpio_set_dir(pin, GPIO_IN);
@@ -17,10 +17,10 @@ void Push::initialize() {
 
     last_read = get_absolute_time();
     if (now()) {
-        pushed_at = get_absolute_time();
+        _pushed_at = get_absolute_time();
         last_state = PushState::depressed;
     } else {
-        released_at = get_absolute_time();
+        _released_at = get_absolute_time();
         last_state = PushState::unpressed;
     }
 }
@@ -33,20 +33,36 @@ PushState Push::state() const {
     return last_state;
 }
 
-absolute_time_t Push::held_for() const {
+absolute_time_t Push::pushed_at() const {
+    if (last_state != PushState::released) {
+        return _pushed_at;
+    }
+
+    return nil_time;
+}
+
+absolute_time_t Push::released_at() const {
+    if (last_state != PushState::pushed) {
+        return _released_at;
+    }
+
+    return nil_time;
+}
+
+uint64_t Push::held_for() const {
     if (last_state == PushState::unpressed || last_state == PushState::released) {
-        return released_at - pushed_at;
+        return _released_at - _pushed_at;
     }
 
     if (last_state == PushState::depressed) {
-        return get_absolute_time() - pushed_at;
+        return get_absolute_time() - _pushed_at;
     }
 
     return 0;
 }
 
 PushState Push::update() {
-    if (get_absolute_time() - last_read >= debounce) {
+    if (absolute_time_diff_us(last_read, get_absolute_time()) >= static_cast<int64_t>(debounce)) {
         if (last_state == PushState::pushed) {
             last_state = PushState::depressed;
         } else if (last_state == PushState::released) {
@@ -63,7 +79,7 @@ PushState Push::update() {
         }
         case PushState::pushed: {
             last_state = now() ? PushState::depressed : PushState::released;
-            pushed_at = get_absolute_time();
+            _pushed_at = get_absolute_time();
             break;
         }
         case PushState::depressed: {
@@ -72,7 +88,7 @@ PushState Push::update() {
         }
         case PushState::released: {
             last_state = now() ? PushState::pushed : PushState::unpressed;
-            released_at = get_absolute_time();
+            _released_at = get_absolute_time();
             break;
         }
         default: {

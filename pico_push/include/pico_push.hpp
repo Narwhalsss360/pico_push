@@ -3,6 +3,7 @@
 #include <pico/stdlib.h>
 #include <pico/time.h>
 #include <pico/types.h>
+#include <cstdint>
 
 namespace pico_push {
     using pin_t = uint;
@@ -29,7 +30,11 @@ namespace pico_push {
 
         PushState state() const;
 
-        absolute_time_t held_for() const;
+        absolute_time_t pushed_at() const;
+
+        absolute_time_t released_at() const;
+
+        uint64_t held_for() const;
 
         PushState update();
 
@@ -44,8 +49,8 @@ namespace pico_push {
 
         absolute_time_t last_read;
 
-        absolute_time_t pushed_at;
+        absolute_time_t _pushed_at;
 
-        absolute_time_t released_at;
+        absolute_time_t _released_at;
     };
 }
