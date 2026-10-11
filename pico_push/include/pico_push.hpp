@@ -38,7 +38,7 @@ namespace pico_push {
 
         absolute_time_t released_at() const;
 
-        uint64_t held_for() const;
+        int64_t held_for() const;
 
         PushState update();
 

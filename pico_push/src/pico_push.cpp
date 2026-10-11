@@ -2,6 +2,10 @@
 
 using namespace pico_push;
 
+static inline int64_t absolute_time_diff_ms(absolute_time_t from, absolute_time_t to) {
+    return absolute_time_diff_us(from, to) / 1000;
+}
+
 Push::Push(const pin_t& pin, const bool& pull_up_button, const uint32_t& debounce)
     :
         pin(pin),
@@ -49,20 +53,20 @@ absolute_time_t Push::released_at() const {
     return nil_time;
 }
 
-uint64_t Push::held_for() const {
+int64_t Push::held_for() const {
     if (last_state == PushState::unpressed || last_state == PushState::released) {
-        return _released_at - _pushed_at;
+        return absolute_time_diff_ms(_released_at, _pushed_at);
     }
 
     if (last_state == PushState::depressed) {
-        return get_absolute_time() - _pushed_at;
+        return absolute_time_diff_ms(get_absolute_time(), _pushed_at);
     }
 
     return 0;
 }
 
 PushState Push::update() {
-    if (absolute_time_diff_us(last_read, get_absolute_time()) < static_cast<int64_t>(debounce) * 1000) {
+    if (absolute_time_diff_ms(last_read, get_absolute_time()) < static_cast<int64_t>(debounce)) {
         if (last_state == PushState::pushed) {
             last_state = PushState::depressed;
         } else if (last_state == PushState::released) {
