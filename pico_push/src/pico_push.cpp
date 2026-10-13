@@ -6,7 +6,7 @@ static inline int64_t absolute_time_diff_ms(absolute_time_t from, absolute_time_
     return absolute_time_diff_us(from, to) / 1000;
 }
 
-Push::Push(const pin_t& pin, const bool& pull_up_button, const uint32_t& debounce)
+Push::Push(const pin_t pin, const bool pull_up_button, const uint32_t debounce)
     :
         pin(pin),
         pull_up_button(pull_up_button),
@@ -38,65 +38,62 @@ PushState Push::state() const {
 }
 
 absolute_time_t Push::pushed_at() const {
-    if (last_state != PushState::released) {
-        return _pushed_at;
-    }
-
-    return nil_time;
+    return _pushed_at;
 }
 
 absolute_time_t Push::released_at() const {
-    if (last_state != PushState::pushed) {
-        return _released_at;
-    }
-
-    return nil_time;
+    return _released_at;
 }
 
 int64_t Push::held_for() const {
-    if (last_state == PushState::unpressed || last_state == PushState::released) {
-        return absolute_time_diff_ms(_released_at, _pushed_at);
+    if (last_state == PushState::pushed || last_state == PushState::depressed) {
+        return absolute_time_diff_ms(_pushed_at, get_absolute_time());
     }
-
-    if (last_state == PushState::depressed) {
-        return absolute_time_diff_ms(get_absolute_time(), _pushed_at);
-    }
-
-    return 0;
+    return absolute_time_diff_ms(_pushed_at, _released_at);
 }
 
 PushState Push::update() {
     if (absolute_time_diff_ms(last_read, get_absolute_time()) < static_cast<int64_t>(debounce)) {
-        if (last_state == PushState::pushed) {
-            last_state = PushState::depressed;
-        } else if (last_state == PushState::released) {
-            last_state = PushState::unpressed;
-        }
         return last_state;
     }
-    last_read = get_absolute_time();
 
+    const bool is_pressed = now();
     switch (last_state) {
         case PushState::unpressed: {
-            last_state = now() ? PushState::pushed : PushState::unpressed;
+            if (is_pressed) {
+                last_state = PushState::pushed;
+                _pushed_at = get_absolute_time();
+                last_read = get_absolute_time();
+            }
             break;
         }
         case PushState::pushed: {
-            last_state = now() ? PushState::depressed : PushState::released;
-            _pushed_at = get_absolute_time();
+            last_state = is_pressed ? PushState::depressed : PushState::released;
+            if (!is_pressed) {
+                _released_at = get_absolute_time();
+                last_read = get_absolute_time();
+            }
             break;
         }
         case PushState::depressed: {
-            last_state = now() ? PushState::depressed : PushState::released;
+            if (!is_pressed) {
+                last_state = PushState::released;
+                _released_at = get_absolute_time();
+                last_read = get_absolute_time();
+            }
             break;
         }
         case PushState::released: {
-            last_state = now() ? PushState::pushed : PushState::unpressed;
-            _released_at = get_absolute_time();
+            last_state = is_pressed ? PushState::pushed : PushState::unpressed;
+            if (is_pressed) {
+                _pushed_at = get_absolute_time();
+                last_read = get_absolute_time();
+            }
             break;
         }
         default: {
             last_state = PushState::unpressed;
+            break;
         }
     }
 

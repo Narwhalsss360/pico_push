@@ -26,7 +26,7 @@ namespace pico_push {
     class Push {
 
     public:
-        Push(const pin_t& pin, const bool& pull_up_button = DEFAULT_PULL, const uint32_t& debounce = DEFAULT_DEBOUNCE);
+        Push(const pin_t pin, const bool pull_up_button = DEFAULT_PULL, const uint32_t debounce = DEFAULT_DEBOUNCE);
 
         void initialize();
 
